@@ -3,6 +3,7 @@ import time
 import os
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 file_path = "data/results.csv"
 class CrawledApprenticeship:
@@ -52,16 +53,20 @@ fetcher = ApprFetcher()
 # write CSV file
 
 file_exists = os.path.isfile(file_path)
+print(file_exists)
 
 with open(file_path, 'a', newline='', encoding='utf-8') as csvfile:
     print("Opening file ....")
     writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    # Get the current timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     if not file_exists:
         writer.writerow(
-            ["hash", ,"timestamp", "profession", "company_ident", "company_name", "url", "start_date", "district", "qualification"])
+            ["timestamp", "hash", "profession", "company_ident", "company_name", "url", "start_date", "district", "qualification"])
     for appr in fetcher.fetch():
         writer.writerow(
-            [appr.chash, appr.profession, appr.cident, appr.company, appr.url, appr.start, appr.district,
+            [timestamp, appr.chash, appr.profession, appr.cident, appr.company, appr.url, appr.start, appr.district,
              appr.qualification])
     print("Closing ...")
 
