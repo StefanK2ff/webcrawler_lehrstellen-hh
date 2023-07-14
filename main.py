@@ -1,12 +1,12 @@
+import csv
+import time
+import os
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-import time
-import csv
 
-
-class CrawledApprenticeship():
-    def __init__(self, profession, company, url, start, district, qualification, cident):
+file_path = "data/results.csv"
+class CrawledApprenticeship:
+    def __init__(self, profession, company, url, start, district, qualification, cident, chash):
         self.profession = profession
         self.company = company
         self.url = url
@@ -14,9 +14,10 @@ class CrawledApprenticeship():
         self.district = district
         self.qualification = qualification
         self.cident = cident
+        self.chash = chash
 
 
-class ApprFetcher():
+class ApprFetcher:
     def fetch(self):
         time.sleep(1)
         link = "https://www.lehrstelle-handwerk.de/ausbildung/lehrstellenboerse-praktikumsboerse/lehrstelle-suchen/list"
@@ -28,7 +29,7 @@ class ApprFetcher():
 
             for tr in table.find_all("tr"):
 
-                if tr.select_one(".flush") == None:
+                if tr.select_one(".flush") is None:
                     continue
                 else:
 
@@ -36,11 +37,12 @@ class ApprFetcher():
                     url = "https://www.lehrstelle-handwerk.de" + tr.select_one("a", href=True)['href'].strip()
                     start = tr.select_one("a").text.strip()
                     cident = str(url)[slice(str(url).find("firma/") + 6, str(url).find("?"))].strip()
+                    chash = str(url)[slice(str(url).find("?cHash=") + 7, len(url))].strip()
                     district = tr.select_one("td[data-label='Stadtteil']").text.strip()
                     qualification = tr.select_one("td[data-label='Abschluss']").text.strip()
 
                     apprenticeships.append(
-                        CrawledApprenticeship(profession, company, url, start, district, qualification, cident))
+                        CrawledApprenticeship(profession, company, url, start, district, qualification, cident, chash))
 
         return apprenticeships
 
@@ -49,11 +51,17 @@ fetcher = ApprFetcher()
 
 # write CSV file
 
-with open('found_apprs.csv', 'w', newline='', encoding='utf-8') as csvfile:
+file_exists = os.path.isfile(file_path)
+
+with open(file_path, 'a', newline='', encoding='utf-8') as csvfile:
     print("Opening file ....")
     writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(["profession", "company_ident", "company_name", "url", "start_date", "district", "qualification"])
+    if not file_exists:
+        writer.writerow(
+            ["hash", ,"timestamp", "profession", "company_ident", "company_name", "url", "start_date", "district", "qualification"])
     for appr in fetcher.fetch():
         writer.writerow(
-            [appr.profession, appr.cident, appr.company, appr.url, appr.start, appr.district, appr.qualification])
+            [appr.chash, appr.profession, appr.cident, appr.company, appr.url, appr.start, appr.district,
+             appr.qualification])
     print("Closing ...")
+
