@@ -7,14 +7,15 @@ from datetime import datetime
 
 file_path = "data/results.csv"
 class CrawledApprenticeship:
-    def __init__(self, profession, company, url, start, district, qualification, cident, chash):
+    def __init__(self, profession, company, url, start, district, qualification, company_id, offer_id, chash):
         self.profession = profession
         self.company = company
         self.url = url
         self.start = start
         self.district = district
         self.qualification = qualification
-        self.cident = cident
+        self.company_id = company_id
+        self.offer_id = offer_id
         self.chash = chash
 
 
@@ -37,13 +38,14 @@ class ApprFetcher:
                     company = tr.select_one(".flush").text.strip()
                     url = "https://www.lehrstelle-handwerk.de" + tr.select_one("a", href=True)['href'].strip()
                     start = tr.select_one("a").text.strip()
-                    cident = str(url)[slice(str(url).find("firma/") + 6, str(url).find("?"))].strip()
+                    both_ids = str(url)[slice(str(url).find("firma/") + 6, str(url).find("?"))].strip()
+                    company_id, offer_id = both_ids.split(".")
                     chash = str(url)[slice(str(url).find("?cHash=") + 7, len(url))].strip()
                     district = tr.select_one("td[data-label='Stadtteil']").text.strip()
                     qualification = tr.select_one("td[data-label='Abschluss']").text.strip()
 
                     apprenticeships.append(
-                        CrawledApprenticeship(profession, company, url, start, district, qualification, cident, chash))
+                        CrawledApprenticeship(profession, company, url, start, district, qualification, company_id, offer_id, chash))
 
         return apprenticeships
 
@@ -63,10 +65,10 @@ with open(file_path, 'a', newline='', encoding='utf-8') as csvfile:
 
     if not file_exists:
         writer.writerow(
-            ["timestamp", "hash", "profession", "company_ident", "company_name", "url", "start_date", "district", "qualification"])
+            ["timestamp", "hash", "profession", "company_ident", "company_name", "offer_id", "url", "start_date", "district", "qualification"])
     for appr in fetcher.fetch():
         writer.writerow(
-            [timestamp, appr.chash, appr.profession, appr.cident, appr.company, appr.url, appr.start, appr.district,
+            [timestamp, appr.chash, appr.profession, appr.company_id, appr.company, appr.offer_id, appr.url, appr.start, appr.district,
              appr.qualification])
     print("Closing ...")
 
