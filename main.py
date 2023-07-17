@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-file_path = "data/results.csv"
+
 class CrawledApprenticeship:
     def __init__(self, profession, company, url, start, district, qualification, company_id, offer_id, chash):
         self.profession = profession
@@ -34,7 +34,6 @@ class ApprFetcher:
                 if tr.select_one(".flush") is None:
                     continue
                 else:
-
                     company = tr.select_one(".flush").text.strip()
                     url = "https://www.lehrstelle-handwerk.de" + tr.select_one("a", href=True)['href'].strip()
                     start = tr.select_one("a").text.strip()
@@ -45,30 +44,45 @@ class ApprFetcher:
                     qualification = tr.select_one("td[data-label='Abschluss']").text.strip()
 
                     apprenticeships.append(
-                        CrawledApprenticeship(profession, company, url, start, district, qualification, company_id, offer_id, chash))
+                        CrawledApprenticeship(profession, company, url, start, district, qualification, company_id,
+                                              offer_id, chash))
 
         return apprenticeships
 
 
-fetcher = ApprFetcher()
+class CsVWriter:
+    def __init__(self, file_path):
+        self.file_path = file_path
 
-# write CSV file
+    def write_data(self, apprenticeships):
+        file_exists = os.path.isfile(self.file_path)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-file_exists = os.path.isfile(file_path)
-print(file_exists)
+        with open(self.file_path, 'a', newline='', encoding='utf-8') as csvfile:
+            print("Opening file ....")
+            writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-with open(file_path, 'a', newline='', encoding='utf-8') as csvfile:
-    print("Opening file ....")
-    writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    # Get the current timestamp
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if not file_exists:
+                writer.writerow(
+                    ["timestamp", "hash", "profession", "company_ident", "company_name", "offer_id", "url",
+                     "start_date", "district", "qualification"])
+            for appr in apprenticeships:
+                writer.writerow(
+                    [timestamp, appr.chash, appr.profession, appr.company_id, appr.company, appr.offer_id, appr.url,
+                     appr.start, appr.district,
+                     appr.qualification])
 
-    if not file_exists:
-        writer.writerow(
-            ["timestamp", "hash", "profession", "company_ident", "company_name", "offer_id", "url", "start_date", "district", "qualification"])
-    for appr in fetcher.fetch():
-        writer.writerow(
-            [timestamp, appr.chash, appr.profession, appr.company_id, appr.company, appr.offer_id, appr.url, appr.start, appr.district,
-             appr.qualification])
-    print("Closing ...")
 
+def main():
+    file_path = "data/results.csv"
+    fetcher = ApprFetcher()
+    csv_writer = CsVWriter(file_path)
+
+    apprenticeships = fetcher.fetch()
+    csv_writer.write_data(apprenticeships)
+
+    print("Data saved.")
+
+
+if __name__ == "__main__":
+    main()
